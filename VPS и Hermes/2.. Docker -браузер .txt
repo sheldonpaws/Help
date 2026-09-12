@@ -1,0 +1,44 @@
+Чтобы настроить браузер, нужно установить docker-контейнер.
+
+Установите сам  Docker, скопировав это в kitty:
+
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+Настройка docker-контейнера с  браузером  (скопировать в kitty):
+
+docker run -d \
+ --name=chrome \
+ -e PUID=1000 \
+ -e PGID=1000 \
+ -e TZ=Europe/Moscow \
+ -e LC_ALL=ru_RU.UTF-8 \
+ -e CUSTOM_USER=admin \
+ -e PASSWORD=ВашНадежныйПароль \
+ -p 3001:3001 \
+ -v /opt/chrome/config:/config \
+ --shm-size=1gb \
+ --restart unless-stopped \
+ lscr.io/linuxserver/chrome:latest
+ 
+ Замените ВашНадежныйПароль на реальный пароль.
+ 
+ Далее в своём локальном браузере, в адресную строку введите https://IP_вашего_сервера:3001 (или воспользуйтесь кнопкой "Docker-браузер")
+ Введите входные дданные,которые создали  в настройках контейнера.
+ 
+ Не закрывайте вкладку контейнера, оставляйте хотя бы одну. Если закроете все вкладки, то контейнер сломается. Если это все же произойдёт, то нужно удалить через веб интерфейс всё из папки по пути на строке 23, удалить контейнер docker rm -f chrome и поставить его заново (скопировать в kitty строки 14 - 26)
+ 
+ Проверить логи контейнера, если что-то пошло не так: docker logs chrome
+Остановить контейнер: docker stop chrome
+Запустить снова: docker start chrome
+Удалить контейнер (не забудьте, что данные в томе сохранятся): docker rm -f chrome
+
+ Буфер обмена в докер- браузере работает с нюансом.
+ Вы копируете информацию со своего компьютера, прежде чем вставлять её в целевое поле в докер- браузере, откройте боковую панель нажав на синюю полосочку у левого края, далее откройте соответствующий спойлер. Вставьте сначала туда. 
+ 
+ Когда закончите работу в докер-браузере, можете закрыть вкладку вашего локального брауера. 
+ 

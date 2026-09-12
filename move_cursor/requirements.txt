@@ -1,0 +1,11 @@
+# Основные зависимости (Windows)
+pynput>=1.7.6
+pywin32>=305
+
+# Linux (раскомментировать при использовании)
+# python-xlib>=0.33
+
+# macOS (раскомментировать при использовании)
+# pyobjc-core>=9.0
+# pyobjc-framework-Quartz>=9.0
+# pyobjc-framework-Cocoa>=9.0

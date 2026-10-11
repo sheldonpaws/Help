@@ -1,6 +1,5 @@
 Убедитесь, что вы подключаетесь под пользовательской записью (не root).
-Создайте сессию tmux (кнопка "Новая")
-Откройте kitty (он перейдёт в tmux)
+Создайте сессию tmux.
 Вставте в него
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 Или посмотрите сайт https://hermes-agent.nousresearch.com

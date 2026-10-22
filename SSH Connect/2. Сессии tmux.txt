@@ -27,3 +27,10 @@ set -g history-limit 100000
 вставьте эти строки в этот же файл
 set -g window-size latest
 set -g aggressive-resize on
+
+Сессии hermes
+посмотрерь сессии:
+hermes sessions list --limit 12
+флаг указывает на количество показываемых ссессий
+Потом можно запустить агента и написать
+"давай продолжим сессию" и id сессии

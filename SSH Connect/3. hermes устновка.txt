@@ -1,6 +1,6 @@
 Убедитесь, что вы подключаетесь под пользовательской записью (не root).
 Создайте сессию tmux.
-Вставте в него
+Вставте в неё
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 Или посмотрите сайт https://hermes-agent.nousresearch.com
  
@@ -18,5 +18,5 @@ hermes update
 
 Знак "~" означает домашнюю папку пользователя (/home/ваш_пользователь).
 
-Если что можно удалить:
+Если что, можно удалить:
 hermes uninstall

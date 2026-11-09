@@ -1,0 +1,144 @@
+Когда нужно дать root Гермесу, заходите под root и выполняйте в kitty, заменив ИМЯ_ПОЛЬЗОВАТЕЛЯ на вторую учётную запись сервера:
+echo 'ИМЯ_ПОЛЬЗОВАТЕЛЯ ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ИМЯ_ПОЛЬЗОВАТЕЛЯ
+chmod 440 /etc/sudoers.d/ИМЯ_ПОЛЬЗОВАТЕЛЯ
+
+После этого Гермес сможет запускать sudo -n <команда> без пароля. 
+Он сам советует отозвать доступ потом:
+rm /etc/sudoers.d/ИМЯ_ПОЛЬЗОВАТЕЛЯ
+
+Мне это нужно было для расследования заражения, вам это вряд ли пригодится. Я думаю это даёт постоянные права для всей пользовательской учётки.
+В первом документе права на сессию.
+
+Нужно включить двухфакторную аутентификацию в разделе Настройки личного кабинета rdp-onedash.
+После копирования 2fa-ключа очень удобно использовать сайт https://www.2-fa.com/ru
+
+Войти на сервер под root и отключить RDP:
+sed -i 's/^port=3389/port=tcp:\/\/127.0.0.1:3389/' /etc/xrdp/xrdp.ini
+systemctl restart xrdp
+ss -tln | grep 3389
+
+Сгенерировать ssh ключ, введя в git bash на Windows:
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "sshconnect"
+Вывод
+Generating public/private ed25519 key pair.
+Enter passphrase (empty for no passphrase):
+Нажмите Enter 2 раза
+
+В домашней директории в папке .ssh появятся два файла. Откройте в блокноте файл с расширением .pub, скопируйте всю строку и вставьте её вместо ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ.
+Вставьте этот блок в Kitty из под root:
+
+mkdir -p /root/.ssh /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh
+echo 'ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ' >> /root/.ssh/authorized_keys
+echo 'ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ' >> /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh/authorized_keys
+chmod 700 /root/.ssh /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh
+chmod 600 /root/.ssh/authorized_keys /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh/authorized_keys
+chown root:root /root/.ssh/authorized_keys
+chown ИМЯ_ПОЛЬЗОВАТЕЛЯ:ИМЯ_ПОЛЬЗОВАТЕЛЯ /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh/authorized_keys
+
+Если напишет "No such file or directory":
+
+rm -f /root/.ssh/authori /tmp/pk
+mkdir -p /root/.ssh /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh
+printf '%s' 'ssh-ed25519 ' > /tmp/pk
+printf '%s' 'AAAAC3NzaC1lZDI1NTE5AAAA' >> /tmp/pk
+printf '%s' 'IAtxaERfeGgXp1U5KS3wio9SW' >> /tmp/pk
+printf '%s' 'WHBg1YE3emoArYK4uhw' >> /tmp/pk
+printf '%s' ' sshconnect' >> /tmp/pk
+printf '\n' >> /tmp/pk
+
+Шаг 2 — проверка, что ключ собрался правильно (это делается на сервере, результат сверяем с отпечатком):
+
+ssh-keygen -l -f /tmp/pk
+
+Шаг 3 — записать ключ в обе учётки:
+
+cat /tmp/pk >> /root/.ssh/authorized_keys
+cat /tmp/pk >> /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh/authorized_keys
+chmod 700 /root/.ssh /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh
+chmod 600 /root/.ssh/authorized_keys
+chmod 600 /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh/authorized_keys
+chown root:root /root/.ssh/authorized_keys
+chown ИМЯ_ПОЛЬЗОВАТЕЛЯ:ИМЯ_ПОЛЬЗОВАТЕЛЯ /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh/authorized_keys
+
+Шаг 4 — финальная проверка:
+
+cat /root/.ssh/authorized_keys
+
+Должна выйти ровно одна строка ssh-ed25519 AAAA... sshconnect (без обрывов).
+
+В программе отключитесь от текущей сессии.
+Нажмите на кнопку "Обзор", откройте в домашней директории папку .ssh,в списке форматов выберите "All files" и откройте приватный ключ без расширения.
+Уберите пароль из поля.
+Если пользовательский профиль реагирует на ключ ошибкой аутентификации, то от root нужно ввести.
+
+chown -R ИМЯ_ПОЛЬЗОВАТЕЛЯ:ИМЯ_ПОЛЬЗОВАТЕЛЯ /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh
+ls -la /home/ИМЯ_ПОЛЬЗОВАТЕЛЯ/.ssh
+
+Если при подключении kitty пишет о недоступности ключа и требует пароль, надо сконвертировать ключ
+Для этого используйте утилиту puttygen.
+
+1. В меню сверху: Conversions → Import Key
+2. В открывшемся диалоге перейдите в .ssh\.
+3. Выберите id_ed25519 — тот, что БЕЗ .pub.
+4. Если верно — сверху вместо «No key» появится отпечаток ключа: тип ssh-ed25519, 256 bits.
+5. Дальше кнопка «Save private key» (теперь она станет активной) → на предупреждение о пароле жмём Yes → сохраняйте как id_ed25519.ppk (в той же папке).
+
+Теперь можно выбирать .ppk или файл без расширения (All files в пикере). Лучше файл без расширения, так как это для GUI, а .ppt для kitty подхватывается автоматически (логика в коде). 
+
+Можно отключать пароль, зайдя под root:
+
+printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin prohibit-password\nPubkeyAuthenticat
+ion yes\n' > /etc/ssh/sshd_config.d/00-hardening.conf
+sshd -t
+sshd -T | grep -E 'passwordauthentication|kbdinteractive|permitrootlogin|pubkeyauth'
+
+Ожидаемый вывод:
+
+passwordauthentication no
+kbdinteractiveauthentication no
+permitrootlogin prohibit-password
+pubkeyauthentication yes
+
+Если не получилось:
+
+cd /etc/ssh/sshd_config.d
+cat > 00-hardening.conf <<'EOF'
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin prohibit-password
+PubkeyAuthentication yes
+EOF
+
+Потом проверки:
+
+sshd -t && echo SINTAKSIS_OK
+Ожидаемый вывод:
+SINTAKSIS_OK
+Затем
+sshd -T | grep -E 'passwordauth|permitroot|pubkeyauth|kbd'
+Ожидаемый вывод:
+passwordauthentication no
+kbdinteractiveauthentication no
+permitrootlogin prohibit-password
+pubkeyauthentication yes
+Или
+permitrootlogin without-password
+pubkeyauthentication yes
+passwordauthentication no
+kbdinteractiveauthentication no
+pubkeyauthoptions none
+
+Если всё сходится:
+
+systemctl reload ssh
+
+Сразу после — тесты:
+
+1. GUI, оба профиля, поле пароля пустое, ключ выбран → «Подключиться» → вошло.
+2. Негативный тест: то же самое, только теперь сотрите путь к ключу — должны получить отказ в аутентификации, «No supported authentication methods available (server sent: publickey)». Это подтвердит, что пароль отключен.
+
+Откат, если что-то пошло не так:
+
+rm /etc/ssh/sshd_config.d/00-hardening.conf && systemctl reload ssh
+
+И на случай полного отрезания (не должно случиться — ключи проверены многократно): веб-консоль провайдера ходит в xrdp по localhost, мы её не закрывали — через неё всегда есть шелл для отката.

@@ -1,3 +1,35 @@
-Дашборд был написан исключительно самим Гермесом. Я дал ему задание подумать над этим.
+Гермес не писал сам дашборд. Я дал ему задание подумать на эту тему.
 Выключил компьютер и отошёл по другим делам. К моему возврашению он подготовил файлы на сервере.
-Я открыл ему доступ к проекту, он скопировал файлы и встоил их в программу.
+Он взял свой дашборд, который сделали для него разработчики и сделал интеграцию для программы.
+Я открыл ему доступ к проекту, он скопировал файлы и встроил их в программу.
+
+Чтобы дашборд переживал перезагрузку сервера,  вставьте в kitty блок команд (в профиле где установлен Гермес).
+
+      mkdir -p ~/.config/systemd/user
+      cat > ~/.config/systemd/user/hermes-dashboard.service <<'EOF'
+      [Unit]
+      Description=Hermes Web Dashboard (127.0.0.1:9119)
+      After=network-online.target
+      Wants=network-online.target
+      StartLimitIntervalSec=0
+      [Service]
+      Type=simple
+      ExecStart=%h/.local/bin/hermes dashboard --no-open --skip-build
+      WorkingDirectory=%h/.hermes
+      Environment="HERMES_HOME=%h/.hermes"
+      Restart=always
+      RestartSec=5
+      StandardOutput=journal
+      StandardError=journal
+      [Install]
+      WantedBy=default.target
+      EOF
+      systemctl --user daemon-reload
+      systemctl --user enable --now hermes-dashboard.service
+
+    Проверка:
+
+      systemctl --user status hermes-dashboard --no-pager
+      curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9119/
+
+    Ожидаемо: active и 200.
